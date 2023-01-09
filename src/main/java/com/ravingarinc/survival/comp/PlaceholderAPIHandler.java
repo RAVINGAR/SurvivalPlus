@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 
 public class PlaceholderAPIHandler extends Module {
     private CharacterManager characterManager;
@@ -77,6 +78,10 @@ public class PlaceholderAPIHandler extends Module {
 
         @Override
         public String onRequest(final OfflinePlayer player, final @NotNull String params) {
+            if (!temperatureManager.isLoaded() || !characterManager.isLoaded()) {
+                SurvivalPlus.log(Level.WARNING, "Could not fufill placeholder request as SurvivalPlus core modules are disabled!");
+                return null;
+            }
             if (player != null) {
                 if (params.equalsIgnoreCase("sp_player_temp") || params.equalsIgnoreCase("sp_player_temperature")) {
                     final Player onlinePlayer = player.getPlayer();

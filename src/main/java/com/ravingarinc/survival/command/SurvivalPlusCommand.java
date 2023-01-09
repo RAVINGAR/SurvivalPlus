@@ -23,18 +23,6 @@ public class SurvivalPlusCommand extends BaseCommand {
         this.plugin = plugin;
         manager = plugin.getModule(CharacterManager.class);
 
-        addOption("reload", 1, (sender, args) -> {
-            plugin.reload();
-            sender.sendMessage(ChatColor.GRAY + "SurvivalPlus has been reloaded!");
-            return true;
-        });
-
-        addOption("disable", 1, (sender, args) -> {
-            plugin.cancel();
-            sender.sendMessage(ChatColor.GRAY + "SurvivalPlus has been disabled! Type /survivalplus reload to re-enable!");
-            return true;
-        });
-
         addOption("player", 2, (sender, args) -> false)
                 .addOption("check", 2, (sender, args) -> {
                     final Player player;
@@ -154,6 +142,18 @@ public class SurvivalPlusCommand extends BaseCommand {
                     sender.sendMessage(ChatColor.GREEN + "Environment Temperature for '" + player.getName() + "' " + ChatColor.GRAY + "| " + String.format("%.2f", temperature));
                     return true;
                 });
+
+        addOption("reload", 1, (sender, args) -> {
+            plugin.reload();
+            sender.sendMessage(ChatColor.GRAY + "SurvivalPlus has been reloaded!");
+            return true;
+        });
+
+        addOption("disable", 1, (sender, args) -> {
+            plugin.cancel();
+            sender.sendMessage(ChatColor.GRAY + "SurvivalPlus has been disabled! Type /survivalplus reload to re-enable!");
+            return true;
+        });
     }
 
     public Pair<SurvivalPlayer, Double> applyTemperatureOption(final CommandSender sender, final String[] args) {
