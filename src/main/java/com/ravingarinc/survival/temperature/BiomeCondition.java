@@ -62,7 +62,7 @@ public class BiomeCondition {
             return;
         }
         final boolean positive = randomMod > 0;
-        double newRandom = random.nextDouble(Math.abs(randomMod));
+        double newRandom = random.nextDouble() * Math.abs(randomMod);
         if (positive) {
             newRandom *= -1;
         }
