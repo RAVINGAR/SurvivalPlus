@@ -1,0 +1,180 @@
+# NOTES ON THE TEMPERATURE FORMULA ALGORITHM
+# How calculations work is such that based on where a player is, there will be an environmental temperature. This is
+# determined by the biomes configured temperature, the time of day, and the random modifier added on top of that.
+# If the player is underground and not in a cave biome, the temperature will be modified by the specified value
+# If the player is under-cover, meaning below a block, the default-temperature will be averaged with the environment temperature
+# Next stage will check if it is currently raining or storming in the player's world, this will apply the given modifier
+# to the last temperature only if the player is not under-cover
+# Then, all the blocks within the configured radius will be checked to see if it has been specified to add or subtract
+# to the given temperature. For each block it will be added to a total such that; temperature = total / (number of blocks / 1.5).
+# This is meant to basically give diminishing returns so you can just add a tonne of heat blocks and get insane heat values.
+# After all this calculations the final environment temperature is run through the following algorithm.
+#
+# y = ( (x - z)^3 ) / max( min( c * 100 * z, c * 4000 ), c * 500)
+#
+# where y = the change in temperature
+#       x = environment temperature
+#       z = player's current temperature
+#       c = calculation-scale option
+#
+# https://www.desmos.com/calculator/rs0hbid5dc
+#
+# In case you don't like maths, you can use the above link to view the graph and understand the values. Such that the z slider
+# represents the player's current temperature, whilst the c slider is the scale option (keep in mind that this must be
+# greater than 0.
+#
+# After this number is calculated. Then the player's temperature resistances are considered. The formula used provides a
+# number which is multiplies against the given change in temperature. The basic idea is that you can specify what is
+# considered the maximum resistance to temperature changes. If you attain that value then the environment will not change
+# the player's core temperature at all. You can also give items negative resistances which will increase the temperature
+# changes applied to them. An item can even have a positive cold resistance and negative heat resistance if you want
+# that item to only be effective in cold climates!
+#
+# y = ( z - max( min( x, z ), -z ) ) / z
+#
+# where y = the resistance modifier
+#       z = maximum resistance
+#       x = the player's resistance value (from all armour and stats)
+#
+# See the formula below, where the slider z is the maximum resistance. Where x is the player's resistance
+# https://www.desmos.com/calculator/c3dn9xlroi
+defaults:
+  # This is the interval at which each player's temperature is checked. Setting this to a lower value will cause a
+  # player's temperature to be changed more rapidly, but if that's all that's desired than simply modify the
+  # calculation-scale option. If you experience any potential lag from the plugin, then increase this 'check-interval'
+  # value. The value is read in ticks (1/20th of a second).
+  check-interval: 100
+  # The lowest value a player's temperature can go
+  minimum-temperature: -15
+  # The default temperature a player will start at when joining for the first time. If a player is under-cover but not
+  # underground, this value will be averaged with the environment temperature as well.
+  default-temperature: 25.0
+  # The highest value a player's temperature can go
+  maximum-temperature: 60.0
+  # The maximum value that a player's resistance can stack to with MMOItem stats (a stat can go negative as well)
+  maximum-mmoitem-resistance: 20
+  # Setting this to a lower value will increase the rate at which a player's temperature will be changed, whilst
+  # setting it to a higher value will decrease the rate. It is recommended that this value is always between 0.1 and 10
+  # due to the exponential nature of the formula it affects.
+  calculation-scale: 5
+miscellaneous:
+  # If a player is underground and not in a cave biome, how much should the environment's temperature be multiplied by.
+  # Underground means below sea level.
+  is-underground: 0.7
+  # To disable any of the below, simply set the values to 0.
+  # If a player is on fire, how much is applied per damage taken from the fire.
+  on-fire: 20
+  # If a player is in a fire, how much temperature is applied per damage taken from the fire
+  in-fire: 25
+  # If a player is in lava, how much temperature is applied per damage taken from the lava
+  in-lava: 35
+  # If a player is in water, this value will be added to the environment temperature before it is applied to a player.
+  in-water: -10
+  # When a player dies how should temperature behave. The options are listed below;
+  # - KEEP - the player will have the same temperature as they did when they died
+  # - RESET - the player's temperature will be reset to the default-temperature setting
+  temperature-behaviour-on-death: RESET
+temperature-effects:
+  # The following using mythic mob skills which are fired every interval. If you don't want them to be fired every interval
+  # and only every x amount of seconds, simply set a cooldown on the skill in the mythic mob configuration and that will
+  # prevent the skill from being executed.
+  # The format is <mythic_skill_id> <range> <percentage>
+  # A range of 'AtoB' means if a player's temperature is greater than or equal to A AND less than B, the skill will be executed
+  # The percentage is optional, if not specified it is assumed that the skill is executed 100% of the time.
+  values:
+    - cold_skill 0to10 10%
+    - hot_skill 0to40
+world:
+  # This section is mainly for things such as fire, lava, or whatever else. But since these are blocks, you are able to
+  # add any block to this section, and being near that will can add or subtract from the environment temperature.
+  # If you do not wish for this feature then make the option 'blocks:' look like 'blocks: []'
+  # From what range does the block affect a player's temperature
+  range: 5
+  blocks:
+    - lantern 8.0
+    - soul_lantern 10.0
+    - torch 8.0
+    - soul_torch 9
+    - fire 12
+    - soul_fire 13
+    - lava 15
+    - campfire 11
+    - soul_campfire 12
+  weather:
+    # If it is raining the temperature of the biome will be multiplied by these values. If the temperature of the biome
+    # is less than 0 then it will be multiplied by (1 - x) where x is one of the below values.
+    raining: 0.7
+    thunderstorm: 0.5
+  # The temperature values specified in the biome list below are multiplied by this value to get the "temperature" of the reason
+  base-biome-temperature: 30.0
+  # WorldGuard compatibility, the flag is called 'temperature-flag' and if set, it will override the biomes temperature.
+  # See the list here https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/Biome.html
+  # Default values taken from here https://minecraft.fandom.com/wiki/Biome
+  # Formatted such that - <biome_id> <day_temperature> <night_temperature> <random_modifier>
+  # For any biomes if you don't specify a night temperature, it will use the day temperature as the night one as well.
+  # This should be used for nether/end/cave biomes
+  # The random_modifier is optional and specified as decimals. A value of 0.1 will mean that the day and night temperature
+  # will vary between an increased value of 0% to 10%. The value can be negative as well, meaning the opposite.
+  biomes:
+    - snowy_plains 0.0 -0.5 0.1
+    - ice_spikes 0.0 -0.5
+    - snowy_taiga 0.0 -0.5
+    - snowy_beach 0.0 -0.5
+    - grove -0.2 -0.7
+    - snowy_slopes -0.3 -0.8
+    - jagged_peaks -0.7 -1.0
+    - frozen_peaks -0.7 -1.0
+    - windswept_hills 0.2 -0.3
+    - windswept_gravelly_hills 0.2 -0.3
+    - windswept_forest 0.2 -0.3
+    - taiga 0.25 -0.25
+    - old_growth_pine_taiga 0.3 0 0.1
+    - old_growth_spruce_taiga 0.25 -0.05 0.1
+    - stony_shore 0.6 0.3 0.1
+    - plains 0.8 0.4 0.1
+    - sunflower_plains 0.8 0.4 0.1
+    - forest 0.7 0.4 0.1
+    - flower_forest 0.7 0.4 0.1
+    - birch_forest 0.6 0.3 0.1
+    - old_growth_birch_forest 0.6 0.3 0.1
+    - dark_forest 0.7 0.3 0.1
+    - swamp 0.8 0.6 0.1
+    - mangrove_swamp 0.9 0.65 0.1
+    - jungle 0.95 0.6 0.1
+    - sparse_jungle 0.95 0.5 0.1
+    - bamboo_jungle 0.95 0.5 0.1
+    - beach 0.8 0.5 0.1
+    - mushroom_fields 0.9 0.5 0.1
+    - meadow 0.5 0.3 0.1
+    - stony_peaks 1.0 0.3 0.1
+    - desert 2.0 0 0.1
+    - savanna 1.8 0.2 0.1
+    - savanna_plateau 1.9 0.3 0.1
+    - windswept_savanna 1.9 0.3 0.1
+    - badlands 2.0 0.2 0.1
+    - wooded_badlands 1.8 0.3 0.1
+    - eroded_badlands 1.9 0.2 0.1
+    - river 0.5 0.3 0.1
+    - frozen_river 0.0 -0.3 0.1
+    - warm_ocean 0.5 0.1 0.1
+    - lukewarm_ocean 0.5 0.1 0.1
+    - deep_lukewarm_ocean 0.5 0.1 0.1
+    - ocean 0.5 0.1 0.1
+    - deep_ocean 0.5 0.1 0.1
+    - cold_ocean 0.5 -0.2 0.1
+    - deep_cold_ocean 0.5 -0.2 0.1
+    - frozen_ocean 0 -0.4 0.1
+    - deep_frozen_ocean 0.5 -0.2 0.1
+    - deep_dark 0.8
+    - dripstone_caves 0.8
+    - lush_caves 0.5
+    - nether_wastes 2.4
+    - soul_sand_valley 2.3
+    - crimson_forest 2.2
+    - warped_forest 2.2
+    - basalt_deltas 2.6
+    - the_end 0.5
+    - small_end_islands 0.5
+    - end_midlands 0.5
+    - end_barrens 0.5
+
