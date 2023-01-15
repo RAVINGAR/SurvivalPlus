@@ -200,7 +200,7 @@ bukkit {
         survivalplus {
             aliases = ['svp', "sp"]
             description = 'SurvivalPlus Admin Command'
-            usage = 'Incorrect amount of arguments! /survivalplus ?'
+            usage = 'Unknown option! Try /survivalplus ?'
             permission = 'survivalplus.admin'
         }
     }

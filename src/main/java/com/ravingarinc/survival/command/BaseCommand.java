@@ -29,7 +29,7 @@ public class BaseCommand extends CommandOption implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull final CommandSender sender, @NotNull final Command command, @NotNull final String label, @NotNull final String[] args) {
-        return sender instanceof Player player && execute(player, args, 0);
+        return execute(sender, args, 0);
     }
 
     public static class CommandCompleter implements TabCompleter {

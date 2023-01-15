@@ -8,7 +8,6 @@ import com.ravingarinc.survival.temperature.BiomeCondition;
 import com.ravingarinc.survival.temperature.TemperatureManager;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -33,8 +32,9 @@ public class PlaceholderAPIHandler extends Module {
         } else {
             characterManager = plugin.getModule(CharacterManager.class);
             temperatureManager = plugin.getModule(TemperatureManager.class);
+
             expansion = new Expansion();
-            expansion.register();
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> expansion.register(), 100);
         }
     }
 
@@ -52,13 +52,13 @@ public class PlaceholderAPIHandler extends Module {
         public Expansion() {
             biomeNames = new HashMap<>();
             for (final Biome biome : Biome.values()) {
-                biomeNames.put(biome.name(), biome);
+                biomeNames.put(biome.name().toLowerCase(), biome);
             }
         }
 
         @Override
         public @NotNull String getIdentifier() {
-            return "SurvivalPlusExpansion";
+            return "sp";
         }
 
         @Override
@@ -77,33 +77,25 @@ public class PlaceholderAPIHandler extends Module {
         }
 
         @Override
-        public String onRequest(final OfflinePlayer player, final @NotNull String params) {
+        public String onPlaceholderRequest(final Player player, final String params) {
             if (!temperatureManager.isLoaded() || !characterManager.isLoaded()) {
                 SurvivalPlus.log(Level.WARNING, "Could not fufill placeholder request as SurvivalPlus core modules are disabled!");
                 return null;
             }
             if (player != null) {
-                if (params.equalsIgnoreCase("sp_player_temp") || params.equalsIgnoreCase("sp_player_temperature")) {
-                    final Player onlinePlayer = player.getPlayer();
-                    if (onlinePlayer == null) {
-                        return null;
-                    }
-                    return String.format("%.2f", characterManager.getPlayer(onlinePlayer).getTemperature());
-                } else if (params.equalsIgnoreCase("sp_player_env") || params.equalsIgnoreCase("sp_player_environment")) {
-                    final Player onlinePlayer = player.getPlayer();
-                    if (onlinePlayer == null) {
-                        return null;
-                    }
-                    return String.format("%.2f", temperatureManager.getEnvironmentTemperatureForPlayer(onlinePlayer));
+                if (params.equalsIgnoreCase("player_temp") || params.equalsIgnoreCase("player_temperature")) {
+                    return String.format("%.2f", characterManager.getPlayer(player).getTemperature());
+                } else if (params.equalsIgnoreCase("player_env") || params.equalsIgnoreCase("player_environment")) {
+                    return String.format("%.2f", temperatureManager.getEnvironmentTemperatureForPlayer(player));
                 }
             }
 
             String biome = null;
-            if (params.startsWith("sp_biome_temp_")) {
-                biome = params.substring(14);
+            if (params.startsWith("biome_temp_")) {
+                biome = params.substring(11);
             }
-            if (params.startsWith("sp_biome_temperature_")) {
-                biome = params.substring(21);
+            if (params.startsWith("biome_temperature_")) {
+                biome = params.substring(18);
             }
 
             if (biome != null) {

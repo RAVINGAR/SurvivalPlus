@@ -23,7 +23,34 @@ public class SurvivalPlusCommand extends BaseCommand {
         this.plugin = plugin;
         manager = plugin.getModule(CharacterManager.class);
 
+        addOption("?", 1, (sender, args) -> {
+            if (args.length == 2) {
+                switch (args[0]) {
+                    case "player" -> sendPlayerHelp(sender);
+                    case "environment" -> sendEnvironmentHelp(sender);
+                    default -> {
+                        sender.sendMessage(ChatColor.GRAY + "------- " + ChatColor.GREEN + " SurvivalPlus Command Help " + ChatColor.GRAY + "-------");
+                        sender.sendMessage(ChatColor.GRAY + "/survivalplus reload | " + ChatColor.DARK_GRAY + "Reload the plugin.");
+                        sender.sendMessage(ChatColor.GRAY + "/survivalplus disable | " + ChatColor.DARK_GRAY + "Disable the plugin.");
+                        sender.sendMessage(ChatColor.GRAY + "/survivalplus player ? | " + ChatColor.DARK_GRAY + "Check and modify a player's temperature directly.");
+                        sender.sendMessage(ChatColor.GRAY + "/survivalplus environment ? | " + ChatColor.DARK_GRAY + "Get the environmental temperature for a biome or for a player");
+                    }
+                }
+            } else {
+                sender.sendMessage(ChatColor.GRAY + "------- " + ChatColor.GREEN + " SurvivalPlus Command Help " + ChatColor.GRAY + "-------");
+                sender.sendMessage(ChatColor.GRAY + "/survivalplus reload | " + ChatColor.DARK_GRAY + "Reload the plugin.");
+                sender.sendMessage(ChatColor.GRAY + "/survivalplus disable | " + ChatColor.DARK_GRAY + "Disable the plugin.");
+                sender.sendMessage(ChatColor.GRAY + "/survivalplus player ? | " + ChatColor.DARK_GRAY + "Check and modify a player's temperature directly.");
+                sender.sendMessage(ChatColor.GRAY + "/survivalplus environment ? | " + ChatColor.DARK_GRAY + "Get the environmental temperature for a biome or for a player");
+            }
+            return true;
+        });
+
         addOption("player", 2, (sender, args) -> false)
+                .addOption("?", 2, (sender, args) -> {
+                    sendPlayerHelp(sender);
+                    return true;
+                }).getParent()
                 .addOption("check", 2, (sender, args) -> {
                     final Player player;
                     if (args.length > 2) {
@@ -42,6 +69,15 @@ public class SurvivalPlusCommand extends BaseCommand {
                     }
                     final SurvivalPlayer survivalPlayer = manager.getPlayer(player);
                     sender.sendMessage(ChatColor.GREEN + "Player '" + player.getName() + "' has a current temperature of " + String.format("%.2f", survivalPlayer.getTemperature()) + " degrees.");
+                    return true;
+                }).getParent()
+                .addOption("apply", 3, (sender, args) -> {
+                    final Pair<SurvivalPlayer, Double> pair = applyTemperatureOption(sender, args);
+                    if (pair != null) {
+                        final SurvivalPlayer player = pair.getLeft();
+                        player.setTemperature(player.apply(player, pair.getRight()));
+                        sender.sendMessage(ChatColor.GREEN + player.getPlayer().getName() + "'s new temperature is now " + String.format("%.2f", player.getTemperature()) + " degrees.");
+                    }
                     return true;
                 }).getParent()
                 .addOption("add", 3, (sender, args) -> {
@@ -94,6 +130,10 @@ public class SurvivalPlusCommand extends BaseCommand {
                 });
 
         addOption("environment", 2, (sender, args) -> false)
+                .addOption("?", 2, (sender, args) -> {
+                    sendEnvironmentHelp(sender);
+                    return true;
+                }).getParent()
                 .addOption("get", 3, (sender, args) -> {
                     if (sender instanceof Player player) {
                         final Biome biome;
@@ -154,6 +194,21 @@ public class SurvivalPlusCommand extends BaseCommand {
             sender.sendMessage(ChatColor.GRAY + "SurvivalPlus has been disabled! Type /survivalplus reload to re-enable!");
             return true;
         });
+    }
+
+    private void sendPlayerHelp(final CommandSender sender) {
+        sender.sendMessage(ChatColor.GRAY + "------- " + ChatColor.GREEN + " SurvivalPlus Player Help " + ChatColor.GRAY + "-------");
+        sender.sendMessage(ChatColor.GRAY + "/survivalplus player check <player> | " + ChatColor.DARK_GRAY + "Check the player's current temperature");
+        sender.sendMessage(ChatColor.GRAY + "/survivalplus player add <amount> <player> | " + ChatColor.DARK_GRAY + "Add a number directly to the player's temperature");
+        sender.sendMessage(ChatColor.GRAY + "/survivalplus player apply <amount> <player> | " + ChatColor.DARK_GRAY + "Apply an temperature considering calculations to the player's temperature");
+        sender.sendMessage(ChatColor.GRAY + "/survivalplus player remove <amount> <player> | " + ChatColor.DARK_GRAY + "Subtract a number directly from the player's temperature");
+        sender.sendMessage(ChatColor.GRAY + "/survivalplus player set <amount> <player> | " + ChatColor.DARK_GRAY + "Set the player's temperature to an exact number");
+    }
+
+    private void sendEnvironmentHelp(final CommandSender sender) {
+        sender.sendMessage(ChatColor.GRAY + "------- " + ChatColor.GREEN + " SurvivalPlus Environment Help " + ChatColor.GRAY + "-------");
+        sender.sendMessage(ChatColor.GRAY + "/survivalplus environment check <player> | " + ChatColor.DARK_GRAY + "Gets the environment temperature at the specified player's location.");
+        sender.sendMessage(ChatColor.GRAY + "/survivalplus environment get <biome> | " + ChatColor.DARK_GRAY + "Gets the environment temperature of the provided biome.");
     }
 
     public Pair<SurvivalPlayer, Double> applyTemperatureOption(final CommandSender sender, final String[] args) {
