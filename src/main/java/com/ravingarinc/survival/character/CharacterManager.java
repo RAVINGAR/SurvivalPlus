@@ -32,6 +32,7 @@ public class CharacterManager extends Module {
     /**
      * Get's the SurvivalPlayer from this Manager. If the player has not been loaded then it will be loaded.
      * The returned value will only be null if the player has not been loaded yet or if an error occurs.
+     * tra
      *
      * @param player The player
      * @return The returned player
