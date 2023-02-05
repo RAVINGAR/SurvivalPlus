@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.Lightable;
 
 import java.util.Map;
 
@@ -33,12 +34,19 @@ public class BlockApplier implements Applyable {
             for (int y = dY - radius; y < dY + radius; y++) {
                 for (int z = dZ - radius; z < dZ + radius; z++) {
                     final Block block = world.getBlockAt(x, y, z);
-                    final Double temperature = temperatureBlocks.get(block.getType());
-                    if (temperature != null) {
-                        i++;
-                        final double distanceFactor = 1 - (((double) Math.max(Math.abs(x - dX), Math.abs(z - dZ))) / radius);
-                        temperatureTotal += (temperature * distanceFactor);
+                    final Material type = block.getType();
+                    final Double temperature = temperatureBlocks.get(type);
+                    if (temperature == null) {
+                        continue;
                     }
+                    if (block.getBlockData() instanceof Lightable) {
+                        if (!((Lightable) block.getBlockData()).isLit()) {
+                            continue;
+                        }
+                    }
+                    i++;
+                    final double distanceFactor = 1 - (((double) Math.max(Math.abs(x - dX), Math.abs(z - dZ))) / radius);
+                    temperatureTotal += (temperature * distanceFactor);
                 }
             }
         }
